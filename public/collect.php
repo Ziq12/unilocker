@@ -1,11 +1,8 @@
 <?php
-session_start();
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit();
-}
+require '../includes/auth_check.php'; // Handles session and login check
 require '../config/db.php';
 require '../includes/header.php';
+
 
 $message = '';
 $error = '';
