@@ -26,6 +26,36 @@ UniLocker simulates a secure, smart-locker network where deliveries and items ca
 * View all system transactions and delivery logs.
 * Monitor user activity and audit logs.
 
+## 🧩 Core System Modules
+
+### 1. 🔐 Authentication Module
+Handles all user identity verification, access control, and session management.
+* **Core Functions:** Student/Admin Registration, Secure Login, Logout, and Session Management.
+* **Security Controls Implemented:**
+  * **Cryptographic Storage:** Passwords are never stored in plaintext; they are securely hashed using **bcrypt** (`password_hash()`).
+  * **Session Security:** Implements session regeneration upon login, strict 15-minute inactivity timeouts, and `HttpOnly`/`Secure` cookie flags to prevent Session Hijacking and Fixation.
+  * **Input Validation:** Strict server-side validation for Student ID formats and email uniqueness to prevent fake accounts and account enumeration.
+  * **Threats Mitigated:** Brute-force attacks, credential stuffing, session fixation, and plaintext password exposure.
+
+### 2. 📦 Transaction & Locker Modules
+The core business logic handling the secure handover of items between Public Depositors and Students.
+
+#### A. Deposit Transaction Workflow
+* **Known Receiver Deposit:** The depositor enters the receiver's Student ID, item category, and uploads a proof photo. The system automatically assigns an available locker and generates a secure 6-digit PIN.
+* **Anonymous Deposit:** The depositor uploads item information without a Student ID. The system assigns a locker and generates a PIN for the depositor to manually share with the receiver.
+* **Security Controls Implemented:**
+  * **Secure File Uploads:** Strict MIME-type validation, file size limits, and randomized filenames (`uniqid()`) to prevent Remote Code Execution (RCE) via malicious scripts.
+  * **PIN Security:** PINs are generated randomly and stored as **bcrypt hashes** in the database (never in plaintext).
+  * **Database Security:** All transaction queries use **PDO Prepared Statements** to completely eliminate SQL Injection risks.
+  * **Threats Mitigated:** Malicious file uploads, PIN guessing, and SQL Injection.
+
+#### B. Collection Workflow
+* **Process:** The student logs in, views their pending deliveries, selects a locker, and enters the 6-digit PIN to confirm collection.
+* **Security Controls Implemented:**
+  * **Strict Ownership Validation (RBAC):** The system explicitly verifies that the logged-in user's ID matches the `receiver_id` of the delivery in the database. This completely prevents **Insecure Direct Object Reference (IDOR)** / Horizontal Privilege Escalation (Student A cannot collect Student B's item).
+  * **Secure PIN Verification:** Uses `password_verify()` to check the user's input against the stored hash securely without exposing the PIN.
+  * **Threats Mitigated:** Unauthorized collection, IDOR attacks, and brute-force PIN guessing.
+
 ## 🛠️ Tech Stack
 * **Backend:** PHP (Native)
 * **Database:** MySQL
